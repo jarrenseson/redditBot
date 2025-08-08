@@ -1,2 +1,4 @@
 # env
 /.env
+# libraries
+redditBot/Lib/site-packages
