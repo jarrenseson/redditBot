@@ -2,3 +2,5 @@
 /.env
 # libraries
 redditBot/Lib/site-packages
+#scripts
+redditBot/Scripts
