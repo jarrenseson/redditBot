@@ -39,6 +39,9 @@ class NLP:
         # Remove punctuation
         text = text.translate(str.maketrans('','',string.punctuation))
 
+        # Remove escape characters
+        text = re.sub(r'[\r\n\t]+', ' ', text)
+
         return text
     
     @staticmethod
@@ -48,8 +51,8 @@ class NLP:
         """
         stop_words = set(stopwords.words('english'))
         lemmatizer = WordNetLemmatizer()
-
         tokens = word_tokenize(text)
+
         lemmatized_tokens = [
             lemmatizer.lemmatize(token)
             for token in tokens
@@ -58,37 +61,30 @@ class NLP:
         return lemmatized_tokens
     
     @staticmethod
-    def named_entity_recognition(text):
+    def topic_modeling(tokens, num_topics=5):
         """
-        Perform Named Entity Recognition (NER) on the input text
+        Perform topic modeling on the input documents using LDA
         """
-        nlp = spacy.load("en_core_web_sm")
+        # Create a dictionary for LDA
+        dictionary = corpora.Dictionary(tokens)
 
-        # POS tagging
-        doc = nlp(text)
+        # Create a corpus
+        unicode_tokens = []
+        for i, token in enumerate(tokens):
+            for char in token:
+                unicode_tokens[i] = unicode_tokens[i] + (r'\\u{:04X}'.format(ord(char)))
+                print(unicode_tokens[i])
+        corpus = [dictionary.doc2bow(unicode_token) for unicode_token in unicode_tokens]
 
-        return doc
+        # Train LDA model
+        lda_model = gensim.models.LdaMulticore(corpus=corpus,
+                                               id2word=dictionary,
+                                               num_topics=num_topics)
+        print(lda_model.print_topics())
 
     @staticmethod
-    def sentiment_analysis(text):
-        """
-        Perform sentiment analysis on the input text
-        """
-        blob = TextBlob(text)
-        sentiment = blob.sentiment.polarity
+    def process(document_list):
+        preprocessed_docs = [NLP.preprocess_text(doc) for doc in document_list]
+        processed_docs = [NLP.tokenize_lemmatize_text(doc) for doc in preprocessed_docs]
 
-        return sentiment
-    
-    @staticmethod
-    def topic_modeling(documents):
-        """
-        Determine optimal amount of topics + perform topic modeling on a list of texts
-        """
-        topic_coherence_scores = dict()
-        for topic_num in range(2, 11, 2):
-            # Create a dictionary and corpus for the documents
-            dictionary = corpora.Dictionary(doc.split() for doc in documents)
-            corpus = [dictionary.doc2bow(doc.split()) for doc in documents]
-
-            lda = gensim.models.LdaMulticore(corpus=corpus, id2word=dictionary, num_topics=topic_num)
-            
+        return processed_docs

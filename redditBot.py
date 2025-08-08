@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import praw
 from google import genai
-from nlp import NLP
+from nlp.nlp import NLP
 
 
 load_dotenv()
@@ -41,11 +41,14 @@ redditInstance = praw.Reddit(
 # Setting subreddit to bot test subreddit
 subreddit = redditInstance.subreddit("shortstories")
 documents = subreddit.hot(limit=10)
+document_list = []
+for doc in documents:
+    document_list.append(doc.selftext)
 
-preprocessed_docs = [NLP.preprocess_text(doc.selftext) for doc in documents]
-print(f"Preprocessed Documents: {preprocessed_docs}")
-processed_docs = [NLP.tokenize_lemmatize_text(doc) for doc in preprocessed_docs]
-print(f"Processed Documents: {processed_docs}")
+# try:
+#     NLP.topic_modeling(preprocessed_docs, num_topics=5)
+# except Exception as e:
+#     print(f"Error during topic modeling: {e}")
 
 # try:
 #     submission = subreddit.submit(title=title.text, selftext=body.text)
