@@ -1,17 +1,25 @@
+# Libraries
 import re
 import string
-from nltk.tokenize import word_tokenize, sent_tokenize
+import nltk
+from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 import spacy
 from textblob import TextBlob
 import gensim
 from gensim import corpora
+from nltk.corpus import stopwords
+nltk.download('stopwords')
+nltk.download('punkt_tab')
+nltk.download('wordnet')
 
 
 class NLP:
-    def __init__(self):
+    def __init__(self, documents):
         self.stemmer = PorterStemmer()
         self.lemmatizer = WordNetLemmatizer()
+        self.coherence_score = None
+        self.documents = documents
 
     @staticmethod
     def preprocess_text(text):
@@ -31,9 +39,6 @@ class NLP:
         # Remove punctuation
         text = text.translate(str.maketrans('','',string.punctuation))
 
-        # Remove extra white space
-        text = ''.join(text.split())
-
         return text
     
     @staticmethod
@@ -41,17 +46,16 @@ class NLP:
         """
         Tokenize the input text into words/sentences and lemmatize them
         """
-        # Tokenizing
-        tokens = word_tokenize(text)
-        sentences = sent_tokenize(text)
-
-        # Stemming
-        stemmer = PorterStemmer()
-        stemmed_tokens = [stemmer.stem(token) for token in tokens]
-
-        # Lemmatizing
+        stop_words = set(stopwords.words('english'))
         lemmatizer = WordNetLemmatizer()
-        lemmatized_tokens = [lemmatizer.lemmatize(token) for token in tokens]
+
+        tokens = word_tokenize(text)
+        lemmatized_tokens = [
+            lemmatizer.lemmatize(token)
+            for token in tokens
+            if token not in stop_words and token.isalpha()
+        ]
+        return lemmatized_tokens
     
     @staticmethod
     def named_entity_recognition(text):
@@ -78,7 +82,13 @@ class NLP:
     @staticmethod
     def topic_modeling(documents):
         """
-        Perform topic modeling on a list of texts
+        Determine optimal amount of topics + perform topic modeling on a list of texts
         """
-        dictionary = corpora.Dictionary(doc.split() for doc in documents)
-        corpus = [dictionary.doc2bow(doc.split()) for doc in documents]
+        topic_coherence_scores = dict()
+        for topic_num in range(2, 11, 2):
+            # Create a dictionary and corpus for the documents
+            dictionary = corpora.Dictionary(doc.split() for doc in documents)
+            corpus = [dictionary.doc2bow(doc.split()) for doc in documents]
+
+            lda = gensim.models.LdaMulticore(corpus=corpus, id2word=dictionary, num_topics=topic_num)
+            
