@@ -12,6 +12,7 @@ from nltk.corpus import stopwords
 nltk.download('stopwords')
 nltk.download('punkt_tab')
 nltk.download('wordnet')
+from gensim.models.coherencemodel import CoherenceModel
 
 
 class NLP:
@@ -42,6 +43,9 @@ class NLP:
         # Remove escape characters
         text = re.sub(r'[\r\n\t]+', ' ', text)
 
+        # Remove tags
+        text = re.sub(r'wp|sp', ' ', text)
+
         return text
     
     @staticmethod
@@ -50,6 +54,17 @@ class NLP:
         Tokenize the input text into words/sentences and lemmatize them
         """
         stop_words = set(stopwords.words('english'))
+        stop_words.update({
+            'wp', 'sp', 'prompt', 'story', 'write', 'writing', 'writeup', 'written', 'tale',
+            'fiction', 'author', 'character', 'characters', 'plot', 'scene', 'chapter', 'narrative',
+            'read', 'reads', 'writingprompt', 'prompted', 'requests', 'one', 'like', 'time', 'know',
+            'said', 'would', 'could', 'even', 'get', 'back', 'people', 'year', 'day', 'make', 'see',
+            'go', 'want', 'think', 'way', 'look', 'come', 'take', 'find', 'say', 'i', 'you', 'he',
+            'she', 'they', 'we', 'will', 'shall', 'must', 'might', 'should', 'one', 'time', 'youre'
+        })
+
+
+
         lemmatizer = WordNetLemmatizer()
         tokens = word_tokenize(text)
 
@@ -58,10 +73,11 @@ class NLP:
             for token in tokens
             if token not in stop_words and token.isalpha()
         ]
+        print(f"Lemmatized Tokens: {lemmatized_tokens}")
         return lemmatized_tokens
     
     @staticmethod
-    def topic_modeling(tokens, num_topics=5):
+    def topic_modeling(tokens, num_topics=6):
         """
         Perform topic modeling on the input documents using LDA
         """
@@ -69,18 +85,14 @@ class NLP:
         dictionary = corpora.Dictionary(tokens)
 
         # Create a corpus
-        unicode_tokens = []
-        for i, token in enumerate(tokens):
-            for char in token:
-                unicode_tokens[i] = unicode_tokens[i] + (r'\\u{:04X}'.format(ord(char)))
-                print(unicode_tokens[i])
-        corpus = [dictionary.doc2bow(unicode_token) for unicode_token in unicode_tokens]
+        corpus = [dictionary.doc2bow(token) for token in tokens]
 
         # Train LDA model
         lda_model = gensim.models.LdaMulticore(corpus=corpus,
                                                id2word=dictionary,
                                                num_topics=num_topics)
-        print(lda_model.print_topics())
+        # for idx, topic in lda_model.print_topics(-1):
+        #     print(f"Topic {idx}: {topic}")
 
     @staticmethod
     def process(document_list):
@@ -88,3 +100,16 @@ class NLP:
         processed_docs = [NLP.tokenize_lemmatize_text(doc) for doc in preprocessed_docs]
 
         return processed_docs
+    
+    @staticmethod
+    def calculate_ideal_topics_num(tokens):    
+        dictionary = corpora.Dictionary(tokens)
+        corpus = [dictionary.doc2bow(token) for token in tokens]
+        for num_topics in range(2, 16,2):
+            lda_model = gensim.models.LdaMulticore(corpus=corpus,
+                                               id2word=dictionary,
+                                               num_topics=num_topics)
+            coherence_model_lda = CoherenceModel(model=lda_model, texts=tokens, dictionary=dictionary, coherence='c_v')
+            coherence_lda = coherence_model_lda.get_coherence()
+            print(f"Number of Topics: {num_topics}, Coherence Score: {coherence_lda}")
+        
