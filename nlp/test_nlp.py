@@ -34,7 +34,13 @@ def test_process(document_list):
     assert len(processed_docs) == len(document_list)
     assert all(isinstance(doc, list) for doc in processed_docs)
 
-def test_topic_modeling(document_list):
+def test_train_model(document_list):
     processed_docs = NLP.process(document_list)
-    NLP.topic_modeling(processed_docs, num_topics=5)
-    
+    NLP.train_lda_model(processed_docs)
+
+def test_calculate_ideal_topics_num(document_list):
+    processed_docs = NLP.process(document_list)
+    NLP.calculate_ideal_topics_num(processed_docs)
+
+def test_get_topics():
+    NLP.get_topics()

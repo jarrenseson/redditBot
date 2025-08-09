@@ -40,14 +40,13 @@ redditInstance = praw.Reddit(
 # print(f"Gemini Body: {body.text}")
 # Setting subreddit to bot test subreddit
 subreddit = redditInstance.subreddit("shortstories")
-documents = subreddit.hot(limit=1000)
+documents = subreddit.new(limit=1)
 document_list = []
 for doc in documents:
+    print(f"url: {doc.url}")
     document_list.append(doc.selftext)
 
-with open("redditPost.txt", "w", encoding="utf-8") as file:
-    for doc in document_list:
-        file.write(doc + "\n")
+NLP.tag_post(document_list)
 
 # try:
 #     NLP.topic_modeling(preprocessed_docs, num_topics=5)
