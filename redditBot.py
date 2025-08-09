@@ -17,7 +17,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Reddit Instance
-redditInstance = praw.Reddit(
+reddit = praw.Reddit(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     username=USERNAME,
@@ -25,28 +25,31 @@ redditInstance = praw.Reddit(
     user_agent="redditBot by /u/Turbulent_Estate7372"
 )
 
-# # Gemini Instance
-# gemini = genai.Client()
+# Gemini Instance
+gemini = genai.Client()
 
-# title = gemini.models.generate_content(
-#     model="gemini-2.5-flash", contents="Give me a single eyecatching title for a Reddit post about random fun facts about anything. Give just a title, no other nonsense in your response"
-# )
-
-# body = gemini.models.generate_content(
-#     model="gemini-2.5-flash", contents=f"Write an interesting fun fact that only a very small percentage of people know about. Make it suitable for a Reddit post. The fact should be interesting and engaging, and it should be something that would spark curiosity or discussion among readers. Keep it concise and to the point."
-# )
-
-# print(f"Gemini title: {title.text}")
-# print(f"Gemini Body: {body.text}")
 # Setting subreddit to bot test subreddit
-subreddit = redditInstance.subreddit("shortstories")
+subreddit = reddit.subreddit("shortstories")
+# documents = [reddit.submission(url="https://www.reddit.com/r/shortstories/comments/k67uhy/ms_i_pretended_to_be_a_missing_girl/")]
 documents = subreddit.new(limit=1)
+submission = None
 document_list = []
 for doc in documents:
+    submission = doc
     print(f"url: {doc.url}")
     document_list.append(doc.selftext)
 
-NLP.tag_post(document_list)
+topic = NLP.tag_post(document_list)
+
+body = gemini.models.generate_content(
+    model="gemini-2.5-flash", contents=f"Act as a seasoned writer. Generate a response to the following post: {document_list[0]}, here is the topic extraced using LDA: {topic}. Make sure to stay on topic"
+)
+
+try:
+    comment = submission.reply(body.text)
+    print(f"Comment created: {comment.permalink}")
+except Exception as e:
+    print(f"Error posting comments: {e}")
 
 # try:
 #     NLP.topic_modeling(preprocessed_docs, num_topics=5)

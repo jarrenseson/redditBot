@@ -9,9 +9,6 @@ from textblob import TextBlob
 import gensim
 from gensim import corpora
 from nltk.corpus import stopwords
-nltk.download('stopwords')
-nltk.download('punkt_tab')
-nltk.download('wordnet')
 from gensim.models.coherencemodel import CoherenceModel
 
 
@@ -71,7 +68,7 @@ class NLP:
         lemmatized_tokens = [
             lemmatizer.lemmatize(token)
             for token in tokens
-            if token not in stop_words and token.isalpha()
+            if token not in stop_words and len(token) > 2 and token.isalpha()
         ]
         return lemmatized_tokens
 
@@ -150,11 +147,31 @@ class NLP:
         """
         Tag a single post (string) with the most relevant topic
         """
+        topic_labels = {
+            0: "Magic & Villainy",
+            1: "Hero’s Personal Struggles & Relationships",
+            2: "Fantasy Creatures & Battles",
+            3: "Royalty & Political Intrigue",
+            4: "Gods, Wishes & Humanity",
+            5: "Ancient Magic & Worldbuilding",
+            6: "Aliens & Planetary Exploration",
+            7: "Heroic Transformations",
+            8: "Human Nature & Moral Choices",
+            9: "Weapons, Death & Alternate Realities",
+            10: "Love, Life & Personal Desires",
+            11: "Demons & Supernatural Conflicts",
+            12: "Strange Events & Departures",
+            13: "Hero-Villain Love-Hate Dynamics",
+            14: "Gods, Demons & Fate",
+            15: "Power, Souls & Rebirth",
+            16: "Mortality & Life-Changing Realizations",
+            17: "Saving Kingdoms & Great Quests"
+            }
         lda_model = gensim.models.LdaMulticore.load("./modelStuff/lda_model.model")
         dictionary = corpora.Dictionary.load("./modelStuff/dictionary.dict")
         
         # Process expects a list of documents, so wrap post in a list
-        processed_post = NLP.process(post)  # processed_post is list of list of tokens
+        processed_post = NLP.process(post)
 
         # Get bow vector for the first (and only) document
         bow_vector = dictionary.doc2bow(processed_post[0])
@@ -169,6 +186,5 @@ class NLP:
 
         # Find topic with highest probability
         best_topic = max(topic_distribution, key=lambda x: x[1])[0]
-        print(f"Most relevant topic: {best_topic}")
         
         return best_topic
